@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Snake</title>
+<style>
+  :root { --bg:#12141a; --panel:#1c1f28; --snake:#5eead4; --head:#2dd4bf; --food:#fb7185; --text:#e5e7eb; --muted:#8b93a7; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  body { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:12px; }
+  .bar { width:min(92vw,420px); display:flex; justify-content:space-between; font-size:16px; color:var(--muted); }
+  .bar b { color:var(--text); font-size:20px; }
+  .wrap { position:relative; width:min(92vw,420px); aspect-ratio:1; }
+  canvas { width:100%; height:100%; background:var(--panel); border-radius:12px; display:block; touch-action:none; }
+  .overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:rgba(18,20,26,.82); border-radius:12px; text-align:center; padding:16px; }
+  .overlay h1 { margin:0; font-size:28px; }
+  .overlay p { margin:0; color:var(--muted); }
+  button { font:inherit; border:0; cursor:pointer; }
+  .play { background:var(--head); color:#042f2e; font-weight:700; padding:12px 28px; border-radius:10px; font-size:18px; }
+  .play:focus-visible, .pad button:focus-visible { outline:3px solid #fff; outline-offset:2px; }
+  .pad { display:grid; grid-template-columns:repeat(3,64px); grid-template-rows:repeat(2,56px); gap:8px; }
+  .pad button { background:var(--panel); color:var(--text); border-radius:12px; font-size:24px; }
+  .pad button:active { background:#2a2f3c; }
+  .up { grid-column:2; grid-row:1; } .left { grid-column:1; grid-row:2; } .down { grid-column:2; grid-row:2; } .right { grid-column:3; grid-row:2; }
+  .hint { color:var(--muted); font-size:14px; margin:0; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+  <div class="bar"><span>Score <b id="score">0</b></span><span>Best <b id="best">0</b></span></div>
+  <div class="wrap">
+    <canvas id="c" width="420" height="420"></canvas>
+    <div class="overlay" id="overlay">
+      <h1 id="title">Snake</h1>
+      <p id="msg">Eat the red dots. Don't hit the walls or yourself.</p>
+      <button class="play" id="play">Play</button>
+    </div>
+  </div>
+  <div class="pad" aria-label="Controls">
+    <button class="up" data-d="up" aria-label="Up">&#9650;</button>
+    <button class="left" data-d="left" aria-label="Left">&#9664;</button>
+    <button class="down" data-d="down" aria-label="Down">&#9660;</button>
+    <button class="right" data-d="right" aria-label="Right">&#9654;</button>
+  </div>
+  <p class="hint">Arrow keys or WASD, or swipe on the board</p>
+
+<script>
+(function () {
+  var N = 21, cv = document.getElementById('c'), ctx = cv.getContext('2d'), S = cv.width / N;
+  var scoreEl = document.getElementById('score'), bestEl = document.getElementById('best');
+  var overlay = document.getElementById('overlay'), titleEl = document.getElementById('title'), msgEl = document.getElementById('msg');
+  var DIRS = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
+  var snake, dir, queue, food, score, timer, running = false, best = 0;
+
+  try { best = parseInt(localStorage.getItem('snake-best'), 10) || 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  function placeFood() {
+    do { food = { x: Math.floor(Math.random()*N), y: Math.floor(Math.random()*N) }; }
+    while (snake.some(function (s) { return s.x === food.x && s.y === food.y; }));
+  }
+
+  function start() {
+    snake = [{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+    dir = 'right'; queue = []; score = 0; scoreEl.textContent = 0;
+    placeFood(); running = true;
+    overlay.classList.add('hidden');
+    clearInterval(timer); timer = setInterval(tick, 120); draw();
+  }
+
+  function turn(d) {
+    if (!running) return;
+    var last = queue.length ? queue[queue.length-1] : dir;
+    var a = DIRS[last], b = DIRS[d];
+    if (a[0] + b[0] === 0 && a[1] + b[1] === 0) return;
+    if (queue.length < 3) queue.push(d);
+  }
+
+  function tick() {
+    if (queue.length) dir = queue.shift();
+    var h = { x: snake[0].x + DIRS[dir][0], y: snake[0].y + DIRS[dir][1] };
+    var hit = h.x < 0 || h.y < 0 || h.x >= N || h.y >= N ||
+      snake.some(function (s) { return s.x === h.x && s.y === h.y; });
+    if (hit) return end();
+    snake.unshift(h);
+    if (h.x === food.x && h.y === food.y) {
+      score++; scoreEl.textContent = score; placeFood();
+      if (score % 5 === 0) { clearInterval(timer); timer = setInterval(tick, Math.max(60, 120 - score*2)); }
+    } else snake.pop();
+    draw();
+  }
+
+  function end() {
+    running = false; clearInterval(timer);
+    if (score > best) { best = score; bestEl.textContent = best; try { localStorage.setItem('snake-best', best); } catch (e) {} }
+    titleEl.textContent = 'Game over';
+    msgEl.textContent = 'You scored ' + score + '. Best: ' + best + '.';
+    document.getElementById('play').textContent = 'Play again';
+    overlay.classList.remove('hidden');
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = '#fb7185';
+    ctx.beginPath(); ctx.arc(food.x*S + S/2, food.y*S + S/2, S*0.36, 0, 7); ctx.fill();
+    snake.forEach(function (s, i) {
+      ctx.fillStyle = i === 0 ? '#2dd4bf' : '#5eead4';
+      ctx.fillRect(s.x*S + 1, s.y*S + 1, S - 2, S - 2);
+    });
+  }
+
+  document.getElementById('play').addEventListener('click', start);
+  document.addEventListener('keydown', function (e) {
+    var m = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right' }[e.key];
+    if (m) { e.preventDefault(); turn(m); }
+    else if ((e.key === 'Enter' || e.key === ' ') && !running && document.activeElement.id !== 'play') start();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.pad button'), function (b) {
+    b.addEventListener('click', function () { turn(b.dataset.d); });
+  });
+
+  var sx, sy;
+  cv.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive:true });
+  cv.addEventListener('touchend', function (e) {
+    var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+    turn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+  }, { passive:true });
+
+  snake = [{x:10,y:10}]; food = {x:15,y:10}; draw();
+})();
+</script>
+</body>
+</html>
