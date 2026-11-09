@@ -1,0 +1,11 @@
+[
+  {
+    "slug": "Snake",
+    "title": "Snake",
+    "category": "Arcade",
+    "badge": "new",
+    "featured": true,
+    "thumb": "Snake/thumb.png",
+    "description": "Classic Snake game. Eat the food and grow longer."
+  }
+]
