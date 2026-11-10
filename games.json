@@ -7,5 +7,14 @@
   "featured": true,
   "thumb": "Count-War/thumb.png",
   "description": "Count the armies and win every battle! A fun counting and math game for kids."
+},
+  {
+  "slug": "Rail-Rush",
+  "title": "Rail Rush",
+  "category": "Arcade",
+  "badge": "hot",
+  "featured": true,
+  "thumb": "Rail-Rush/thumb.png",
+  "description": "Run along the tracks, dodge trains and collect coins! Swipe to change lanes, jump and slide."
 }
 ]
