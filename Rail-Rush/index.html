@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Rail Rush - Endless Runner</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#1b1464;touch-action:none;user-select:none;-webkit-user-select:none;font-family:"Trebuchet MS",system-ui,sans-serif;color:#fff}
+canvas{position:fixed;inset:0;display:block}
+#ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,8,40,.55);padding:14px}
+.card{text-align:center;max-width:380px;width:100%}
+h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0,0,0,.35)}
+#msg{margin:0 0 10px;font-size:1.1rem}
+#stats{font-size:1.25rem;font-weight:800;line-height:1.7;margin-bottom:10px}
+#go{border:0;border-radius:18px;font:inherit;font-weight:800;font-size:1.5rem;padding:14px 44px;color:#fff;background:#2eb872;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.35)}
+#go:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.how{margin:16px 0 0;font-size:.95rem;opacity:.85;line-height:1.6}
+#mute{position:fixed;top:10px;right:10px;border:0;border-radius:50%;width:42px;height:42px;font-size:1.2rem;background:rgba(255,255,255,.2);color:#fff;cursor:pointer;z-index:5}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<button id="mute" aria-label="Sound">🔔</button>
+<div id="ov">
+  <div class="card">
+    <h1>🚂 Rail Rush</h1>
+    <p id="msg">Dodge the trains and grab the coins!</p>
+    <div id="stats"></div>
+    <button id="go">▶ Play</button>
+    <p class="how">Swipe ⬅️ ➡️ to change lane<br>⬆️ jump over low barriers · ⬇️ slide under high bars<br>Keyboard: arrow keys or W A S D</p>
+  </div>
+</div>
+<script>
+(function () {
+  var $ = function (i) { return document.getElementById(i); };
+  var cv = $('c'), cx = cv.getContext('2d'), W = 0, H = 0;
+  var ZS = 520, ZMAX = 3200, HZ = 0.3, GY = 0.86;
+  var st = 'idle', dist = 0, speed = 650, coins = 0, px = 0, lane = 0, py = 0, vy = 0, slide = 0;
+  var nextAt = 400, ents = [], t = 0, shake = 0, muted = false, ac = null, newBest = false;
+  var best = +ls('rr_best') || 0;
+  var SK = []; for (var k = 0; k < 28; k++) SK.push({ x: k / 28, w: .03 + Math.random() * .04, h: .04 + Math.random() * .12 });
+  var COLORS = ['#e8505b', '#3b82f6', '#f5a623'];
+
+  function ls(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function sv(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = rnd(0, i), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+
+  function resize() {
+    var d = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  window.addEventListener('resize', resize); resize();
+
+  /* ---- sound ---- */
+  function beep(f, d, type) {
+    if (muted) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = type || 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(.12, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + d);
+      o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + d);
+    } catch (e) {}
+  }
+
+  /* ---- projection ---- */
+  function LW() { return Math.min(W * 0.3, H * 0.2); }
+  function P(x, z, h) {
+    var s = 1 / (1 + Math.max(z, -90) / ZS), hy = H * HZ, gy = H * GY, u = LW();
+    return { x: W / 2 + x * u * s, y: hy + (gy - hy) * s - (h || 0) * u * s, s: s };
+  }
+  function poly(pts, col) {
+    cx.fillStyle = col; cx.beginPath(); cx.moveTo(pts[0].x, pts[0].y);
+    for (var i = 1; i < pts.length; i++) cx.lineTo(pts[i].x, pts[i].y);
+    cx.closePath(); cx.fill();
+  }
+
+  /* ---- game flow ---- */
+  function reset() {
+    ents = []; dist = 0; coins = 0; lane = 0; px = 0; py = 0; vy = 0; slide = 0;
+    nextAt = 400; speed = 650; shake = 0; newBest = false; st = 'play';
+    $('ov').style.display = 'none';
+  }
+  function crash() {
+    st = 'over'; shake = 1; beep(150, .5, 'sawtooth');
+    var sc = score();
+    if (sc > best) { best = sc; newBest = true; sv('rr_best', best); }
+    $('msg').textContent = newBest ? '🏆 New best score!' : 'Oh no, you crashed!';
+    $('stats').innerHTML = 'Score: ' + sc + '<br>🪙 Coins: ' + coins + '<br>🏅 Best: ' + best;
+    $('go').textContent = '↻ Play again';
+    setTimeout(function () { if (st === 'over') $('ov').style.display = 'flex'; }, 700);
+  }
+  function score() { return Math.floor(dist / 50) + coins * 5; }
+
+  function spawn() {
+    var lanes = shuffle([-1, 0, 1]), maxd = 60, i;
+    if (Math.random() < .3) {
+      var n = rnd(4, 8);
+      for (i = 0; i < n; i++) ents.push({ t: 'coin', lane: lanes[0], z: ZMAX + i * 90, d: 0 });
+      maxd = n * 90;
+    } else {
+      var kk = Math.random() < .35 ? 2 : 1;
+      for (i = 0; i < kk; i++) {
+        var ty = ['low', 'high', 'train'][rnd(0, 2)], d = ty === 'train' ? rnd(450, 900) : 50;
+        ents.push({ t: ty, lane: lanes[i], z: ZMAX, d: d, c: COLORS[rnd(0, 2)] });
+        if (d > maxd) maxd = d;
+      }
+      if (Math.random() < .6) for (i = 0; i < 4; i++) ents.push({ t: 'coin', lane: lanes[2], z: ZMAX + i * 90, d: 0 });
+    }
+    nextAt = dist + maxd + rnd(380, 520);
+  }
+
+  function update(dt) {
+    t += dt;
+    if (st === 'idle') { dist += 450 * dt; return; }
+    if (st === 'over') { shake = Math.max(0, shake - dt * 3); return; }
+    speed = 650 + Math.min(850, dist * 0.02);
+    var mv = speed * dt; dist += mv;
+    px += (lane - px) * Math.min(1, 14 * dt);
+    if (py > 0 || vy > 0) { vy -= 14 * dt; py += vy * dt; if (py <= 0) { py = 0; vy = 0; } }
+    if (slide > 0) slide -= dt;
+    if (dist >= nextAt) spawn();
+    for (var i = 0; i < ents.length; i++) {
+      var e = ents[i]; e.z -= mv;
+      if (e.t === 'coin') {
+        if (!e.got && e.z < 30 && e.z > -30 && Math.abs(px - e.lane) < .7) { e.got = 1; coins++; beep(880, .08); }
+      } else if (e.z < 22 && e.z + e.d > -22 && Math.abs(px - e.lane) < .62) {
+        if (e.t === 'low' && py > .55) continue;
+        if (e.t === 'high' && slide > 0 && py < .1) continue;
+        crash(); return;
+      }
+    }
+    ents = ents.filter(function (e) { return !e.got && e.z + e.d > -120; });
+  }
+
+  /* ---- drawing ---- */
+  function drawEnt(e) {
+    var p = P(e.lane, e.z), u = LW() * p.s, x = p.x, y = p.y;
+    if (e.t === 'coin') {
+      var w = Math.abs(Math.cos(t * 6 + e.z / 60)) * u * .2 + u * .05;
+      cx.fillStyle = '#ffd24a'; cx.beginPath(); cx.ellipse(x, y - u * .45, w, u * .2, 0, 0, 7); cx.fill();
+      cx.strokeStyle = '#b8860b'; cx.lineWidth = Math.max(1, u * .03); cx.stroke();
+    } else if (e.t === 'low') {
+      cx.fillStyle = '#f5a623'; cx.fillRect(x - u * .42, y - u * .5, u * .84, u * .5);
+      cx.fillStyle = '#222'; for (var i = 0; i < 4; i++) cx.fillRect(x - u * .42 + i * u * .21, y - u * .5, u * .1, u * .5);
+    } else if (e.t === 'high') {
+      cx.fillStyle = '#9aa0b5'; cx.fillRect(x - u * .45, y - u * 1.1, u * .08, u * 1.1); cx.fillRect(x + u * .37, y - u * 1.1, u * .08, u * 1.1);
+      cx.fillStyle = '#e8505b'; cx.fillRect(x - u * .45, y - u * 1.1, u * .9, u * .45);
+      cx.fillStyle = '#fff'; for (var j = 0; j < 4; j++) cx.fillRect(x - u * .45 + j * u * .24, y - u * 1.1, u * .12, u * .45);
+    } else {
+      var hh = 1.7, zb = Math.min(e.z + e.d, ZMAX), l = -.43, r = .43;
+      poly([P(e.lane + l, e.z, hh), P(e.lane + r, e.z, hh), P(e.lane + r, zb, hh), P(e.lane + l, zb, hh)], '#c9d1e6');
+      cx.fillStyle = e.c; cx.fillRect(x - u * .43, y - u * hh, u * .86, u * hh);
+      cx.fillStyle = 'rgba(0,0,0,.25)'; cx.fillRect(x - u * .43, y - u * .35, u * .86, u * .12);
+      cx.fillStyle = '#bfe6ff'; cx.fillRect(x - u * .33, y - u * 1.45, u * .66, u * .5);
+      cx.fillStyle = '#ffec99'; cx.fillRect(x - u * .35, y - u * .25, u * .12, u * .1); cx.fillRect(x + u * .23, y - u * .25, u * .12, u * .1);
+    }
+  }
+
+  function drawPlayer() {
+    var p = P(px, 0), u = LW(), x = p.x, y = p.y - py * u, run = Math.sin(t * 16) * u * .12;
+    cx.fillStyle = 'rgba(0,0,0,.3)'; cx.beginPath(); cx.ellipse(p.x, p.y, u * .22 * (1 - Math.min(py, 1) * .4), u * .06, 0, 0, 7); cx.fill();
+    if (slide > 0 && py < .1) {
+      cx.fillStyle = '#2d3a6b'; cx.fillRect(x - u * .3, y - u * .22, u * .3, u * .14);
+      cx.fillStyle = '#ff5a5a'; cx.fillRect(x - u * .2, y - u * .4, u * .42, u * .26);
+      cx.fillStyle = '#ffcf9f'; cx.beginPath(); cx.arc(x + u * .28, y - u * .3, u * .12, 0, 7); cx.fill();
+      cx.fillStyle = '#2eb872'; cx.fillRect(x + u * .2, y - u * .46, u * .2, u * .08);
+      return;
+    }
+    cx.fillStyle = '#2d3a6b';
+    cx.fillRect(x - u * .13, y - u * .42 + (py ? 0 : Math.max(0, run)), u * .1, u * .42 - (py ? 0 : Math.max(0, run)));
+    cx.fillRect(x + u * .03, y - u * .42 + (py ? 0 : Math.max(0, -run)), u * .1, u * .42 - (py ? 0 : Math.max(0, -run)));
+    cx.fillStyle = '#ff5a5a'; cx.fillRect(x - u * .17, y - u * .88, u * .34, u * .5);
+    cx.fillStyle = '#ffcf9f'; cx.beginPath(); cx.arc(x, y - u * 1.02, u * .14, 0, 7); cx.fill();
+    cx.fillStyle = '#2eb872'; cx.fillRect(x - u * .16, y - u * 1.17, u * .32, u * .09);
+    cx.fillStyle = '#ffcf9f'; cx.fillRect(x - u * .24, y - u * .85 + run * .5, u * .07, u * .3); cx.fillRect(x + u * .17, y - u * .85 - run * .5, u * .07, u * .3);
+  }
+
+  function draw() {
+    var hy = H * HZ, u = LW(), i, z, p;
+    cx.save();
+    if (shake > 0) cx.translate((Math.random() - .5) * shake * 18, (Math.random() - .5) * shake * 18);
+    var g = cx.createLinearGradient(0, 0, 0, hy); g.addColorStop(0, '#1b1464'); g.addColorStop(1, '#ff7e5f');
+    cx.fillStyle = g; cx.fillRect(-20, -20, W + 40, hy + 20);
+    cx.fillStyle = '#2a1f5c';
+    for (i = 0; i < SK.length; i++) cx.fillRect(SK[i].x * W, hy - SK[i].h * H, SK[i].w * W, SK[i].h * H);
+    cx.fillStyle = '#1c2233'; cx.fillRect(-20, hy, W + 40, H);
+    poly([P(-1.5, ZMAX), P(1.5, ZMAX), P(1.5, -150), P(-1.5, -150)], '#3a3f5c');
+    cx.strokeStyle = 'rgba(255,255,255,.35)'; cx.lineWidth = 2;
+    [-.5, .5].forEach(function (lx) { var a = P(lx, ZMAX), b = P(lx, -150); cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); });
+    cx.strokeStyle = '#d0d4e8'; cx.lineWidth = 3;
+    [-1.5, 1.5].forEach(function (lx) { var a = P(lx, ZMAX), b = P(lx, -150); cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); });
+    var off = dist % 200;
+    for (z = -off; z < ZMAX; z += 200) {
+      if (z < -150) continue;
+      var a = P(-1.5, z), b = P(1.5, z);
+      cx.strokeStyle = 'rgba(0,0,0,' + Math.min(.45, a.s * 1.2) + ')'; cx.lineWidth = Math.max(1, 6 * a.s);
+      cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
+    }
+    var off2 = dist % 400;
+    for (z = -off2; z < ZMAX; z += 400) {
+      if (z < -150) continue;
+      [-2.1, 2.1].forEach(function (lx) {
+        var a = P(lx, z), b = P(lx, z, 1.7);
+        cx.strokeStyle = '#8890b5'; cx.lineWidth = Math.max(1, 6 * a.s);
+        cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
+        cx.fillStyle = '#ffec99'; cx.beginPath(); cx.arc(b.x, b.y, Math.max(1.5, u * .08 * a.s), 0, 7); cx.fill();
+      });
+    }
+    var list = ents.slice().sort(function (x, y) { return y.z - x.z; }), done = false;
+    for (i = 0; i < list.length; i++) {
+      if (!done && list[i].z < 0) { drawPlayer(); done = true; }
+      drawEnt(list[i]);
+    }
+    if (!done) drawPlayer();
+    var fog = cx.createLinearGradient(0, hy, 0, hy + H * .12); fog.addColorStop(0, 'rgba(255,126,95,.55)'); fog.addColorStop(1, 'rgba(255,126,95,0)');
+    cx.fillStyle = fog; cx.fillRect(0, hy, W, H * .12);
+    cx.restore();
+    if (st === 'play' || st === 'over') {
+      cx.font = '800 ' + Math.max(18, Math.min(W, H) * .06) + 'px "Trebuchet MS",sans-serif';
+      cx.textBaseline = 'top'; cx.lineWidth = 4; cx.strokeStyle = 'rgba(0,0,0,.5)'; cx.fillStyle = '#fff';
+      var s1 = 'Score ' + score(), s2 = '🪙 ' + coins;
+      cx.textAlign = 'left'; cx.strokeText(s1, 14, 12); cx.fillText(s1, 14, 12);
+      cx.textAlign = 'center'; cx.strokeText(s2, W / 2, 12); cx.fillText(s2, W / 2, 12);
+    }
+  }
+
+  var last = 0;
+  function loop(ts) {
+    var dt = Math.min(.033, (ts - last) / 1000 || 0); last = ts;
+    update(dt); draw(); requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  /* ---- controls ---- */
+  function move(d) { if (st !== 'play') return; var n = lane + d; if (n >= -1 && n <= 1) { lane = n; beep(300, .05); } }
+  function jump() { if (st === 'play' && py === 0 && vy === 0) { vy = 5.6; slide = 0; beep(520, .12); } }
+  function down() { if (st !== 'play') return; if (py > 0) vy = -12; else slide = .6; }
+  document.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') move(-1);
+    else if (k === 'ArrowRight' || k === 'd' || k === 'D') move(1);
+    else if (k === 'ArrowUp' || k === 'w' || k === 'W' || k === ' ') { jump(); e.preventDefault(); }
+    else if (k === 'ArrowDown' || k === 's' || k === 'S') { down(); e.preventDefault(); }
+    else if (k === 'Enter' && st !== 'play') reset();
+  });
+  var sx = 0, sy = 0, dn = false;
+  function sdown(x, y) { sx = x; sy = y; dn = true; }
+  function sup(x, y) {
+    if (!dn) return; dn = false;
+    var dx = x - sx, dy = y - sy;
+    if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+    if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : -1); else if (dy < 0) jump(); else down();
+  }
+  cv.addEventListener('touchstart', function (e) { e.preventDefault(); sdown(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  cv.addEventListener('touchend', function (e) { e.preventDefault(); var c = e.changedTouches[0]; sup(c.clientX, c.clientY); }, { passive: false });
+  cv.addEventListener('mousedown', function (e) { sdown(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', function (e) { sup(e.clientX, e.clientY); });
+  $('go').onclick = reset;
+  $('mute').onclick = function () { muted = !muted; this.textContent = muted ? '🔕' : '🔔'; };
+  if (best) $('stats').innerHTML = '🏅 Best: ' + best;
+})();
+</script>
+</body>
+</html>
