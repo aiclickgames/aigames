@@ -16,5 +16,14 @@
   "featured": true,
   "thumb": "Rail-Rush/thumb.png",
   "description": "Run along the tracks, dodge trains and collect coins! Swipe to change lanes, jump and slide."
+},
+  {
+  "slug": "Cycle-Run",
+  "title": "Cycle Run",
+  "category": "Arcade",
+  "badge": "new",
+  "featured": true,
+  "thumb": "Cycle-Run/thumb.png",
+  "description": "Ride your bicycle, jump over obstacles, duck under birds and collect coins! Tap to jump, swipe down to duck."
 }
 ]
