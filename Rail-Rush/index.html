@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#1b1464;touch-action:none;user-select:none;-webkit-user-select:none;font-family:"Trebuchet MS",system-ui,sans-serif;color:#fff}
-canvas{position:fixed;inset:0;display:block}
+canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
 #ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,8,40,.55);padding:14px}
 .card{text-align:center;max-width:380px;width:100%}
 h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0,0,0,.35)}
@@ -50,7 +50,7 @@ h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0
   function resize() {
     var d = Math.min(2, window.devicePixelRatio || 1);
     W = window.innerWidth; H = window.innerHeight;
-    cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+    cv.width = W * d; cv.height = H * d; cv.style.width = W + 'px'; cv.style.height = H + 'px'; cx.setTransform(d, 0, 0, d, 0, 0);
   }
   window.addEventListener('resize', resize); resize();
 
@@ -90,7 +90,7 @@ h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0
     var sc = score();
     if (sc > best) { best = sc; newBest = true; sv('rr_best', best); }
     $('msg').textContent = newBest ? '🏆 New best score!' : 'Oh no, you crashed!';
-    $('stats').innerHTML = 'Score: ' + sc + '<br>🪙 Coins: ' + coins + '<br>🏅 Best: ' + best;
+    $('stats').innerHTML = 'Score: ' + sc + '<br>💰 Coins: ' + coins + '<br>🏅 Best: ' + best;
     $('go').textContent = '↻ Play again';
     setTimeout(function () { if (st === 'over') $('ov').style.display = 'flex'; }, 700);
   }
@@ -223,9 +223,9 @@ h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0
     if (st === 'play' || st === 'over') {
       cx.font = '800 ' + Math.max(18, Math.min(W, H) * .06) + 'px "Trebuchet MS",sans-serif';
       cx.textBaseline = 'top'; cx.lineWidth = 4; cx.strokeStyle = 'rgba(0,0,0,.5)'; cx.fillStyle = '#fff';
-      var s1 = 'Score ' + score(), s2 = '🪙 ' + coins;
+      var s1 = 'Score ' + score(), s2 = String(coins);
       cx.textAlign = 'left'; cx.strokeText(s1, 14, 12); cx.fillText(s1, 14, 12);
-      cx.textAlign = 'center'; cx.strokeText(s2, W / 2, 12); cx.fillText(s2, W / 2, 12);
+      var fs = Math.max(18, Math.min(W, H) * .06); cx.fillStyle = '#ffd24a'; cx.beginPath(); cx.arc(W / 2 - fs * .9, 12 + fs * .55, fs * .4, 0, 7); cx.fill(); cx.strokeStyle = '#b8860b'; cx.lineWidth = 3; cx.stroke(); cx.lineWidth = 4; cx.strokeStyle = 'rgba(0,0,0,.5)'; cx.fillStyle = '#fff'; cx.textAlign = 'left'; cx.strokeText(s2, W / 2 - fs * .3, 12); cx.fillText(s2, W / 2 - fs * .3, 12);
     }
   }
 
