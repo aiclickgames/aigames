@@ -25,5 +25,14 @@
   "featured": true,
   "thumb": "Cycle-Run/thumb.png",
   "description": "Ride your bicycle, jump over obstacles, duck under birds and collect coins! Tap to jump, swipe down to duck."
-}
+},
+    {
+  "slug": "new Mario",
+  "title": "new Mario",
+  "category": "Education",
+  "badge": "new",
+  "featured": true,
+  "thumb": "Count-War/thumb.png",
+  "description": "Count the armies and win every battle! A fun counting and math game for kids."
+},
 ]
