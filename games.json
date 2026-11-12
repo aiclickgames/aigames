@@ -34,5 +34,16 @@
   "featured": true,
   "thumb": "Super Jumper/Super Jumper.png",
   "description": "Super Jumper to play online , free game for kids."
+},
+  {
+  "slug": "neon-snake",
+  "title": "Neon Snake",
+  "category": "arcade",
+  "thumb": "neon-snake/thumb.svg",
+  "badge": "new",
+  "date": "2026-11-12",
+  "tags": "snake classic retro neon arcade",
+  "likes": 0,
+  "description": "Guide the glowing snake, eat the neon food and grow longer without hitting the walls or yourself. Use arrow keys, WASD or swipe on mobile. The faster you grow, the faster you go!"
 }
 ]
