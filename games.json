@@ -45,5 +45,16 @@
   "tags": "snake classic retro neon arcade",
   "likes": 0,
   "description": "Guide the glowing snake, eat the neon food and grow longer without hitting the walls or yourself. Use arrow keys, WASD or swipe on mobile. The faster you grow, the faster you go!"
+},
+  {
+  "slug": "Egg Heist",
+  "title": "Egg Heist",
+  "category": "arcade",
+  "thumb": "neon-snake/thumb.svg",
+  "badge": "new",
+  "date": "2026-11-13",
+  "tags": "Egg Heist arcade",
+  "likes": 0,
+  "description": "Guide the fox Egg Heist eat the egg run fast and faster as the faster you go!"
 }
 ]
