@@ -67,5 +67,16 @@
   "tags": "Bolt Car arcade",
   "likes": 0,
   "description": "Guide the fox Egg Heist eat the egg run fast and faster as the faster you go!"
+},
+  {
+  "slug": "8 BALL POOL",
+  "title": "8 BALL POOL",
+  "category": "arcade",
+  "thumb": "8 BALL POOL/8 BALL POOL.png",
+  "badge": "new",
+  "date": "2026-11-13",
+  "tags": "8 BALL POOL arcade",
+  "likes": 0,
+  "description": "8 BALL POOL Aim with the mouse or your finger. Pull back and let go to shoot — the farther you pull, the harder the shot.!"
 }
 ]
