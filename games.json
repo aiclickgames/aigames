@@ -56,5 +56,16 @@
   "tags": "Egg Heist arcade",
   "likes": 0,
   "description": "Guide the fox Egg Heist eat the egg run fast and faster as the faster you go!"
+},
+  {
+  "slug": "Bolt Car",
+  "title": "Bolt Car",
+  "category": "arcade",
+  "thumb": "Bolt Car/Bolt Car.png",
+  "badge": "new",
+  "date": "2026-11-13",
+  "tags": "Bolt Car arcade",
+  "likes": 0,
+  "description": "Guide the fox Egg Heist eat the egg run fast and faster as the faster you go!"
 }
 ]
