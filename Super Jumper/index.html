@@ -330,10 +330,10 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
       stepItems();
       if (P.slide) {
         P.x = FC * T + 1; P.y += 2; flagY = Math.min(flagY + 2, 11 * T - 8);
-        if (P.y + P.h >= 13 * T) { P.y = 13 * T - P.h; P.slide = 0; P.face = 1; }
+        if (P.y + P.h >= 12 * T) { P.y = 12 * T - P.h; P.slide = 0; P.face = 1; }
       } else {
         P.vx = 1.1; P.vy += .78; move(P); P.anim += .15; flagY = Math.min(flagY + 2, 11 * T - 8);
-        if (P.x > (LEN - 6) * T) { P.hide = 1; state = 'clear'; clearT = 0; sfx.win(); }
+        if (P.x > (LEN - 4) * T) { P.hide = 1; state = 'clear'; clearT = 0; sfx.win(); }
       }
     } else if (state === 'clear') {
       clearT++;
