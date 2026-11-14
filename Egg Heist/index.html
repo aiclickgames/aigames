@@ -14,6 +14,7 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
 #msg{margin:0 0 8px;font-size:1.1rem}
 #stats{font-size:1.15rem;font-weight:800;line-height:1.7;margin-bottom:8px}
 #go{border:0;border-radius:18px;font:inherit;font-weight:800;font-size:1.5rem;padding:14px 44px;color:#fff;background:#e8761f;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.3)}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0 10px}.chip{border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.3);color:#fff;font:inherit;font-weight:800;padding:8px 14px;border-radius:999px;cursor:pointer}.chip.on{background:#2eb872;border-color:#fff}
 #go:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
 .how{margin:14px 0 0;font-size:.93rem;line-height:1.6;opacity:.95}
 .sb{position:fixed;top:4px;border:0;border-radius:50%;width:36px;height:36px;font-size:1rem;background:rgba(0,0,0,.35);color:#fff;cursor:pointer;z-index:5}
@@ -29,6 +30,7 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
     <h1>🦊 Egg Heist</h1>
     <p id="msg">Sneak into the farm, steal every egg and run back to your den!</p>
     <div id="stats"></div>
+    <div class="how">Difficulty</div><div id="diff" class="chips"></div>
     <button id="go">▶ Start Sneaking</button>
     <p class="how">Move: arrow keys / W A S D, or drag your finger on the screen<br>Stay out of the farmers' yellow vision cones and hide in bushes<br>Dogs can smell you, so keep your distance!<br>Golden eggs are worth extra points</p>
   </div>
@@ -47,6 +49,15 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
 
   function ls(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function sv(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  var DN = ['Easy', 'Normal', 'Hard'], LIVES = [5, 3, 2], CONE = [[120, .5], [150, .56], [175, .64]], SPD = [.8, 1, 1.25];
+  var diff = (function () { var v = ls('eh_diff'); return v === null ? 1 : Math.min(2, Math.max(0, +v)); })();
+  function buildMenu() {
+    var d = $('diff'); d.innerHTML = '';
+    DN.forEach(function (n, i) {
+      var b = document.createElement('button'); b.className = 'chip' + (i === diff ? ' on' : ''); b.textContent = n;
+      b.onclick = function () { diff = i; sv('eh_diff', i); buildMenu(); }; d.appendChild(b);
+    });
+  }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function rngf(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var q = Math.imul(seed ^ seed >>> 15, 1 | seed); q = q + Math.imul(q ^ q >>> 7, 61 | q) ^ q; return ((q ^ q >>> 14) >>> 0) / 4294967296; }; }
 
@@ -149,7 +160,7 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
         if (ok) wps = cand;
       }
       if (!wps) { var q = free(14, 200, 0); wps = [q]; }
-      farmers.push({ x: wps[0].x, y: wps[0].y, wps: wps, i: 1 % wps.length, face: rng() * 6.28, speed: Math.min(80, 50 + n * 4), pause: 0, seeing: 0 });
+      farmers.push({ x: wps[0].x, y: wps[0].y, wps: wps, i: 1 % wps.length, face: rng() * 6.28, speed: Math.min(80, 50 + n * 4) * SPD[diff], pause: 0, seeing: 0 });
     }
     var nd = n >= 2 ? (n >= 5 ? 2 : 1) : 0;
     for (i = 0; i < nd; i++) { var d = free(10, 220, 0); dogs.push({ x: d.x, y: d.y, tx: d.x, ty: d.y, wt: 0, chase: 0, bark: 0 }); }
@@ -185,7 +196,7 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
         if (lives < 0) {
           st = 'over'; sfx.over(); if (score > best) { best = score; sv('eh_best', best); }
           $('msg').textContent = 'The farmer caught you!'; $('stats').innerHTML = 'Score: ' + score + '<br>Level reached: ' + (level + 1) + '<br>🏅 Best: ' + best;
-          $('go').textContent = '↻ Try again'; $('ov').style.display = 'flex';
+          $('go').textContent = '↻ Try again'; buildMenu(); $('ov').style.display = 'flex';
         } else genLevel(level);
       }
       return;
@@ -209,8 +220,8 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
         if (d < 3) { f.i = (f.i + 1) % f.wps.length; f.pause = .9; }
         else { f.x += dx / d * f.speed * dt; f.y += dy / d * f.speed * dt; f.face += angDiff(Math.atan2(dy, dx), f.face) * Math.min(1, 8 * dt); }
       }
-      var ddx = pl.x - f.x, ddy = pl.y - f.y, dist = Math.hypot(ddx, ddy), range = pl.hide ? 38 : 150;
-      if (dist < range && (dist < 22 || Math.abs(angDiff(Math.atan2(ddy, ddx), f.face)) < .56) && los(f.x, f.y, pl.x, pl.y)) { f.seeing = 1; rate = Math.max(rate, 1.5 * (1.2 - dist / range * .5)); }
+      var ddx = pl.x - f.x, ddy = pl.y - f.y, dist = Math.hypot(ddx, ddy), range = pl.hide ? 38 : CONE[diff][0];
+      if (dist < range && (dist < 22 || Math.abs(angDiff(Math.atan2(ddy, ddx), f.face)) < CONE[diff][1]) && los(f.x, f.y, pl.x, pl.y)) { f.seeing = 1; rate = Math.max(rate, 1.5 * (1.2 - dist / range * .5)); }
     });
     dogs.forEach(function (g) {
       var dist = Math.hypot(pl.x - g.x, pl.y - g.y), sp = 62;
@@ -257,7 +268,7 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
   }
   function drawFarmer(f) {
     cx.fillStyle = f.seeing ? 'rgba(255,60,60,.32)' : 'rgba(255,240,90,.2)';
-    cx.beginPath(); cx.moveTo(f.x, f.y); cx.arc(f.x, f.y, 150, f.face - .56, f.face + .56); cx.closePath(); cx.fill();
+    cx.beginPath(); cx.moveTo(f.x, f.y); cx.arc(f.x, f.y, CONE[diff][0], f.face - CONE[diff][1], f.face + CONE[diff][1]); cx.closePath(); cx.fill();
     ell(f.x, f.y + 3, 12, 6, 'rgba(0,0,0,.25)');
     ell(f.x, f.y, 11, 11, '#2d5fc0'); ell(f.x, f.y, 7, 7, '#ffcf9f');
     ell(f.x, f.y, 15, 15, 'rgba(0,0,0,0)'); cx.fillStyle = '#e0b84a'; cx.beginPath(); cx.ellipse(f.x, f.y, 14, 12, 0, 0, 7); cx.fill(); ell(f.x, f.y, 7, 7, '#f1d36a');
@@ -326,7 +337,7 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
   requestAnimationFrame(loop);
 
   /* ================= CONTROLS ================= */
-  function newGame() { actx(); score = 0; lives = 3; level = 0; $('ov').style.display = 'none'; genLevel(0); }
+  function newGame() { actx(); score = 0; lives = LIVES[diff]; level = 0; $('ov').style.display = 'none'; genLevel(0); }
   var KM = { ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0], ArrowRight: [1, 0], d: [1, 0], D: [1, 0], ArrowUp: [0, -1], w: [0, -1], W: [0, -1], ArrowDown: [0, 1], s: [0, 1], S: [0, 1] };
   var held = {};
   function kcalc() { var x = 0, y = 0; for (var k in held) { x += held[k][0]; y += held[k][1]; } keys.x = clamp(x, -1, 1); keys.y = clamp(y, -1, 1); }
@@ -344,7 +355,7 @@ h1{margin:0 0 6px;font-size:clamp(2rem,9vw,3.2rem);text-shadow:0 4px 0 rgba(0,0,
   $('mute').onclick = function () { muted = !muted; this.textContent = muted ? '🔕' : '🔔'; };
   $('mus').onclick = function () { musicOn = !musicOn; this.style.opacity = musicOn ? 1 : .45; music(st === 'play'); };
   if (best) $('stats').innerHTML = '🏅 Best: ' + best;
-  genLevel(0); st = 'title';
+  buildMenu(); genLevel(0); st = 'title';
 })();
 </script>
 </body>
