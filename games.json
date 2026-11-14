@@ -78,5 +78,16 @@
   "tags": "8 BALL POOL arcade",
   "likes": 0,
   "description": "8 BALL POOL Aim with the mouse or your finger. Pull back and let go to shoot — the farther you pull, the harder the shot.!"
+},
+  {
+  "slug": "Dojo Duel",
+  "title": "Dojo Duel",
+  "category": "arcade",
+  "thumb": "Dojo Duel/Dojo Duel.png",
+  "badge": "new",
+  "date": "2026-11-14",
+  "tags": "Dojo Duel arcade",
+  "likes": 0,
+  "description": "Dojo Duel pick Your Fighter and Fight , learn how to fight.!"
 }
 ]
