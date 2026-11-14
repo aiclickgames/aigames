@@ -14,6 +14,7 @@ h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0
 #msg{margin:0 0 10px;font-size:1.1rem}
 #stats{font-size:1.25rem;font-weight:800;line-height:1.7;margin-bottom:10px}
 #go{border:0;border-radius:18px;font:inherit;font-weight:800;font-size:1.5rem;padding:14px 44px;color:#fff;background:#2eb872;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.35)}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0 10px}.chip{border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.3);color:#fff;font:inherit;font-weight:800;padding:8px 14px;border-radius:999px;cursor:pointer}.chip.on{background:#2eb872;border-color:#fff}
 #go:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.35)}
 .how{margin:16px 0 0;font-size:.95rem;opacity:.85;line-height:1.6}
 #mute{position:fixed;top:10px;right:10px;border:0;border-radius:50%;width:42px;height:42px;font-size:1.2rem;background:rgba(255,255,255,.2);color:#fff;cursor:pointer;z-index:5}
@@ -27,6 +28,7 @@ h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0
     <h1>🚂 Rail Rush</h1>
     <p id="msg">Dodge the trains and grab the coins!</p>
     <div id="stats"></div>
+    <div class="how">Difficulty</div><div id="diff" class="chips"></div>
     <button id="go">▶ Play</button>
     <p class="how">Swipe ⬅️ ➡️ to change lane<br>⬆️ jump over low barriers · ⬇️ slide under high bars<br>Keyboard: arrow keys or W A S D</p>
   </div>
@@ -39,6 +41,14 @@ h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0
   var st = 'idle', dist = 0, speed = 650, coins = 0, px = 0, lane = 0, py = 0, vy = 0, slide = 0;
   var nextAt = 400, ents = [], t = 0, shake = 0, muted = false, ac = null, newBest = false;
   var best = +ls('rr_best') || 0;
+  var DN = ['Easy', 'Normal', 'Hard'], DF = [.8, 1, 1.2], diff = (function () { var v = ls('rr_diff'); return v === null ? 1 : Math.min(2, Math.max(0, +v)); })();
+  function buildMenu() {
+    var d = $('diff'); d.innerHTML = '';
+    DN.forEach(function (n, i) {
+      var b = document.createElement('button'); b.className = 'chip' + (i === diff ? ' on' : ''); b.textContent = n;
+      b.onclick = function () { diff = i; sv('rr_diff', i); buildMenu(); }; d.appendChild(b);
+    });
+  }
   var SK = []; for (var k = 0; k < 28; k++) SK.push({ x: k / 28, w: .03 + Math.random() * .04, h: .04 + Math.random() * .12 });
   var COLORS = ['#e8505b', '#3b82f6', '#f5a623'];
 
@@ -91,7 +101,7 @@ h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0
     if (sc > best) { best = sc; newBest = true; sv('rr_best', best); }
     $('msg').textContent = newBest ? '🏆 New best score!' : 'Oh no, you crashed!';
     $('stats').innerHTML = 'Score: ' + sc + '<br>💰 Coins: ' + coins + '<br>🏅 Best: ' + best;
-    $('go').textContent = '↻ Play again';
+    $('go').textContent = '↻ Play again'; buildMenu();
     setTimeout(function () { if (st === 'over') $('ov').style.display = 'flex'; }, 700);
   }
   function score() { return Math.floor(dist / 50) + coins * 5; }
@@ -118,7 +128,7 @@ h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0
     t += dt;
     if (st === 'idle') { dist += 450 * dt; return; }
     if (st === 'over') { shake = Math.max(0, shake - dt * 3); return; }
-    speed = 650 + Math.min(850, dist * 0.02);
+    speed = (650 + Math.min(850, dist * 0.02)) * DF[diff];
     var mv = speed * dt; dist += mv;
     px += (lane - px) * Math.min(1, 14 * dt);
     if (py > 0 || vy > 0) { vy -= 14 * dt; py += vy * dt; if (py <= 0) { py = 0; vy = 0; } }
@@ -262,6 +272,7 @@ h1{margin:0 0 6px;font-size:clamp(2.2rem,10vw,3.4rem);text-shadow:0 4px 0 rgba(0
   window.addEventListener('mouseup', function (e) { sup(e.clientX, e.clientY); });
   $('go').onclick = reset;
   $('mute').onclick = function () { muted = !muted; this.textContent = muted ? '🔕' : '🔔'; };
+  buildMenu();
   if (best) $('stats').innerHTML = '🏅 Best: ' + best;
 })();
 </script>
