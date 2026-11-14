@@ -1,0 +1,579 @@
+/* ==========================================================================
+   COIN QUEST - 2D PLATFORMER STYLESHEET
+   ========================================================================== */
+
+:root {
+  --primary-color: #ffb703;
+  --primary-hover: #fb8500;
+  --accent-color: #2ec4b6;
+  --accent-purple: #7209b7;
+  --danger-color: #e63946;
+  --dark-bg: #0d1b2a;
+  --card-bg: rgba(13, 27, 42, 0.88);
+  --hud-bg: rgba(13, 27, 42, 0.75);
+  --text-light: #ffffff;
+  --text-muted: #e0e1dd;
+  --border-radius: 16px;
+  --font-main: 'Fredoka', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-retro: 'Press Start 2P', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #060b13;
+  font-family: var(--font-main);
+  color: var(--text-light);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* --------------------------------------------------------------------------
+   GAME CONTAINER
+   -------------------------------------------------------------------------- */
+#game-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  max-width: 1200px;
+  max-height: 675px; /* 16:9 aspect ratio */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 100px rgba(46, 196, 182, 0.15);
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+@media (min-width: 1200px) and (min-height: 700px) {
+  #game-wrapper {
+    border: 3px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   CANVAS
+   -------------------------------------------------------------------------- */
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #80c4f8;
+  image-rendering: auto;
+}
+
+/* --------------------------------------------------------------------------
+   TOP HUD (HEADS UP DISPLAY)
+   -------------------------------------------------------------------------- */
+.hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--hud-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  pointer-events: auto;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.hud.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-20px);
+}
+
+.hud-left, .hud-center, .hud-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hud-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+}
+
+.hud-label {
+  color: var(--primary-color);
+  font-size: 0.85rem;
+}
+
+#hearts-display {
+  font-size: 1.25rem;
+  letter-spacing: 2px;
+  filter: drop-shadow(0 0 4px rgba(230, 57, 70, 0.6));
+}
+
+.coin-counter {
+  color: #ffe66d;
+}
+
+.coin-svg {
+  display: inline-block;
+  vertical-align: middle;
+  filter: drop-shadow(0 0 4px rgba(255, 230, 109, 0.5));
+  animation: coinWobble 2.5s ease-in-out infinite;
+}
+
+@keyframes coinWobble {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.15) rotate(10deg); }
+}
+
+.coin-total {
+  opacity: 0.65;
+  font-size: 0.85rem;
+}
+
+#score-display {
+  font-family: var(--font-retro);
+  font-size: 1.1rem;
+  color: #48cae4;
+  text-shadow: 0 0 8px rgba(72, 202, 228, 0.5);
+}
+
+.hud-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.hud-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.08);
+}
+
+.hud-btn:active {
+  transform: scale(0.95);
+}
+
+/* --------------------------------------------------------------------------
+   OVERLAY SCREENS (START, PAUSE, GAME OVER, VICTORY)
+   -------------------------------------------------------------------------- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(7, 14, 26, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 20;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  padding: 20px;
+}
+
+.overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-card {
+  background: var(--card-bg);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--border-radius);
+  padding: 30px 40px;
+  max-width: 520px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 183, 3, 0.15);
+  animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.game-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(46, 196, 182, 0.2);
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.game-title {
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #ffe66d 0%, #ffb703 50%, #fb8500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 6px;
+  text-shadow: 0 4px 20px rgba(251, 133, 0, 0.4);
+}
+
+.game-subtitle {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+/* Character Preview in Start Screen */
+.hero-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 22px;
+}
+
+.preview-character {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #00b4d8, #0077b6);
+  border-radius: 14px;
+  position: relative;
+  box-shadow: 0 8px 16px rgba(0, 180, 216, 0.4);
+  animation: previewBounce 1.4s ease-in-out infinite;
+  overflow: hidden;
+}
+
+.preview-headband {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background: #e63946;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.preview-character::before, .preview-character::after {
+  content: '';
+  position: absolute;
+  top: 24px;
+  width: 9px;
+  height: 12px;
+  background: white;
+  border-radius: 4px;
+}
+
+.preview-character::before {
+  left: 14px;
+}
+
+.preview-character::after {
+  right: 14px;
+}
+
+@keyframes previewBounce {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-12px) scaleY(1.05); }
+}
+
+/* Buttons */
+.btn {
+  font-family: var(--font-main);
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 14px 34px;
+  border-radius: 30px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ffb703, #fb8500);
+  color: #1a1400;
+  box-shadow: 0 8px 24px rgba(251, 133, 0, 0.45);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 28px rgba(251, 133, 0, 0.6);
+}
+
+.btn-primary:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.btn-group {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.pulse-anim {
+  animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 8px 24px rgba(251, 133, 0, 0.45); }
+  50% { box-shadow: 0 8px 34px rgba(251, 133, 0, 0.8); }
+}
+
+/* Instructions Panel */
+.instructions-panel {
+  margin-top: 22px;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.instruction-group {
+  margin-bottom: 10px;
+}
+
+.instruction-group:last-child {
+  margin-bottom: 0;
+}
+
+.instruction-title {
+  font-weight: 700;
+  color: var(--accent-color);
+  margin-bottom: 6px;
+  font-size: 0.88rem;
+}
+
+.controls-row {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.key-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-family: var(--font-retro);
+  font-size: 0.65rem;
+  color: #fff;
+  margin: 0 2px;
+}
+
+/* Modals specifics (Game Over / Victory) */
+.game-over-icon, .victory-icon {
+  font-size: 3.5rem;
+  margin-bottom: 10px;
+}
+
+.modal-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.text-danger {
+  color: var(--danger-color);
+  text-shadow: 0 0 20px rgba(230, 57, 70, 0.5);
+}
+
+.text-gold {
+  color: #ffd166;
+  text-shadow: 0 0 20px rgba(255, 209, 102, 0.6);
+}
+
+.modal-text {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.stars-rating {
+  font-size: 2.2rem;
+  margin-bottom: 18px;
+  letter-spacing: 6px;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+}
+
+.stats-summary {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-box {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 20px;
+  min-width: 130px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.stat-val {
+  display: block;
+  font-family: var(--font-retro);
+  font-size: 1.15rem;
+  color: #ffe66d;
+}
+
+/* --------------------------------------------------------------------------
+   ON-SCREEN TOUCH CONTROLS (MOBILE & TABLET)
+   -------------------------------------------------------------------------- */
+.touch-controls {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none; /* children enable pointer-events */
+  z-index: 15;
+}
+
+.touch-left-cluster {
+  display: flex;
+  gap: 14px;
+}
+
+.touch-right-cluster {
+  display: flex;
+}
+
+.touch-btn {
+  pointer-events: auto;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: white;
+  font-size: 1.4rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  touch-action: none;
+  transition: transform 0.1s ease, background 0.1s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.touch-btn:active, .touch-btn.pressed {
+  background: rgba(255, 183, 3, 0.5);
+  border-color: #ffb703;
+  transform: scale(0.92);
+}
+
+.touch-btn-jump {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-family: var(--font-main);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: rgba(46, 196, 182, 0.28);
+  border-color: rgba(46, 196, 182, 0.6);
+}
+
+.touch-btn-jump:active, .touch-btn-jump.pressed {
+  background: rgba(46, 196, 182, 0.65);
+  border-color: #2ec4b6;
+  transform: scale(0.92);
+}
+
+/* Hide touch controls on desktop unless touched/requested */
+@media (hover: hover) and (pointer: fine) {
+  .touch-controls {
+    opacity: 0.35;
+    transition: opacity 0.2s ease;
+  }
+  .touch-controls:hover {
+    opacity: 0.85;
+  }
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 600px) {
+  .game-title {
+    font-size: 2rem;
+  }
+  .modal-card {
+    padding: 20px 20px;
+  }
+  .touch-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 1.2rem;
+  }
+  .touch-btn-jump {
+    width: 72px;
+    height: 72px;
+    font-size: 0.85rem;
+  }
+  .hud {
+    padding: 6px 12px;
+  }
+  .hud-item {
+    font-size: 0.9rem;
+    gap: 4px;
+  }
+  #score-display {
+    font-size: 0.95rem;
+  }
+}

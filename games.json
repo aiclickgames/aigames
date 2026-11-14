@@ -89,5 +89,17 @@
   "tags": "Dojo Duel arcade",
   "likes": 0,
   "description": "Dojo Duel pick Your Fighter and Fight , learn how to fight.!"
+},
+  {
+  "slug": "coin-quest",
+  "title": "Coin Quest",
+  "category": "arcade",
+  "badge": "new",
+  "featured": true,
+  "thumb": "coin-quest/thumb.png",
+  "date": "2026-11-14",
+  "tags": "coin quest platformer 2d arcade jump run coins adventure",
+  "likes": 0,
+  "description": "Jump across platforms, stomp enemies, and collect all golden coins in this colorful 2D platformer adventure!"
 }
 ]
